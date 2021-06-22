@@ -54,7 +54,7 @@ describe(`globals cases`, () => {
         const result = getDefaultStageHost();
 
         if (expectedResult !== result) {
-            throw new Error(`Expected default stage host to be ${ expectedResult }, got ${ result }`);
+            throw new Error(`Expected default stage host to be ${ expectedResult }, got ${ result || 'undefined' }`);
         }
     });
 
@@ -74,5 +74,16 @@ describe(`globals cases`, () => {
         if (expectedResult !== result) {
             throw new Error(`Expected correlation id to be ${ expectedResult }, got ${ result }`);
         }
+
+        window.__CORRELATION_ID__ = 'def345';
+
+        const newExpectedResult = 'def345';
+        const newResult = getCorrelationID();
+
+        if (newExpectedResult !== newResult) {
+            throw new Error(`Expected correlation id to be ${ newExpectedResult }, got ${ newResult }`);
+        }
+
+        delete window.__CORRELATION_ID__;
     });
 });

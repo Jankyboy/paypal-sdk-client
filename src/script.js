@@ -7,7 +7,7 @@ import { COUNTRY, SDK_SETTINGS, SDK_QUERY_KEYS, INTENT, COMMIT, VAULT, CURRENCY,
     QUERY_BOOL, LANG, type LocaleType, DEFAULT_SALE_COMMIT, DEFAULT_NONSALE_COMMIT,
     PAGE_TYPES } from '@paypal/sdk-constants/src';
 
-import { getPath, getDefaultNamespace, getSDKHost } from './globals';
+import { getPath, getDefaultNamespace, getSDKHost } from './global';
 import { CLIENT_ID_ALIAS } from './config';
 
 type GetSDKScript = () => HTMLScriptElement;
@@ -24,7 +24,7 @@ export const getSDKScript : GetSDKScript = memoize(() => {
     try {
         return getCurrentScript();
     } catch (err) {
-        throw new Error(`PayPal Payments SDK script not fiund on page! Expected to find <script src="https://${ getSDKHost() }${  getPath() }">\n\n${ stringifyError(err) }`);
+        throw new Error(`PayPal Payments SDK script not found on page! Expected to find <script src="https://${ getSDKHost() }${  getPath() }">\n\n${ stringifyError(err) }`);
     }
 });
 
@@ -100,7 +100,7 @@ export function getMerchantID() : $ReadOnlyArray<string> {
         if (!merchantIDAttribute) {
             throw new Error(`Must pass ${ SDK_SETTINGS.MERCHANT_ID } when ${ SDK_QUERY_KEYS.MERCHANT_ID }=* passed in url`);
         }
-        
+
         const merchantID = merchantIDAttribute.split(',');
 
         if (merchantID.length <= 1) {
@@ -115,7 +115,7 @@ export function getMerchantID() : $ReadOnlyArray<string> {
         }
         return merchantID;
     }
-    
+
     if (merchantIDString) {
         return merchantIDString.split(',');
     }
@@ -202,7 +202,7 @@ export function getPartnerAttributionID() : ?string {
 export function getPageType() : ?string {
     const pageType = getSDKAttribute(SDK_SETTINGS.PAGE_TYPE, '');
     const validPageType = values(PAGE_TYPES).indexOf(pageType.toLowerCase()) !== -1;
-    
+
     if (!validPageType && pageType.length) {
         throw new Error(`Invalid page type, '${ pageType }'`);
     }
@@ -216,12 +216,21 @@ export function getLocale() : LocaleType {
         const [ lang, country ] = locale.split('_');
         return { lang, country };
     }
-    
-    for (const { country, lang } of getBrowserLocales()) {
-        // $FlowFixMe
-        if (COUNTRY_LANGS.hasOwnProperty(country) && COUNTRY_LANGS[country].indexOf(lang) !== -1) {
-            // $FlowFixMe
+
+    for (let { country, lang } of getBrowserLocales()) {
+        country = country && COUNTRY[country];
+        lang = lang && LANG[lang.toUpperCase()];
+
+        if (country && lang && COUNTRY_LANGS[country] && COUNTRY_LANGS[country].indexOf(lang) !== -1) {
             return { country, lang };
+        } else if (lang) {
+            // We infer country from language if there is only one possible country match
+            const possibleCountries = Object.keys(COUNTRY_LANGS).filter(c => COUNTRY_LANGS[c].some(l => l === lang));
+            
+            if (possibleCountries.length === 1) {
+                const possibleCountry = possibleCountries[0];
+                return { country: possibleCountry, lang };
+            }
         }
     }
 
@@ -238,8 +247,8 @@ export function getLocale() : LocaleType {
     };
 }
 
-export function getCSPNonce() : ?string {
-    return getSDKAttribute(SDK_SETTINGS.CSP_NONCE);
+export function getCSPNonce() : string {
+    return getSDKAttribute(SDK_SETTINGS.CSP_NONCE) || '';
 }
 
 export function getEnableThreeDomainSecure() : boolean {
@@ -248,6 +257,10 @@ export function getEnableThreeDomainSecure() : boolean {
 
 export function getSDKIntegrationSource() : ?string {
     return getSDKAttribute(SDK_SETTINGS.SDK_INTEGRATION_SOURCE);
+}
+
+export function getUserExperienceFlow() : ?string {
+    return getSDKAttribute(SDK_SETTINGS.USER_EXPERIENCE_FLOW);
 }
 
 // whether in zoid window

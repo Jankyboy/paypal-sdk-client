@@ -1,13 +1,14 @@
 /* @flow */
 
-import { noop, stringifyError, stringifyErrorMessage, isIEIntranet, getResourceLoadTime, waitForWindowReady } from 'belter/src';
+import { noop, stringifyError, stringifyErrorMessage, isIEIntranet, getResourceLoadTime, waitForWindowReady, ATTRIBUTES } from 'belter/src';
 import { ZalgoPromise } from 'zalgo-promise/src';
 import { FPTI_KEY, FPTI_FEED, FPTI_DATA_SOURCE, FPTI_SDK_NAME, FPTI_USER_ACTION } from '@paypal/sdk-constants/src';
 
-import { getEnv, getVersion, getCorrelationID } from './globals';
+import { getEnv, getVersion, getCorrelationID } from './global';
 import { getPartnerAttributionID, getClientID, getMerchantID, getCommit, getLocale, getSDKScript, getSDKIntegrationSource, getPageType } from './script';
 import { getSessionID } from './session';
 import { getLogger } from './logger';
+import { isPayPalDomain } from './domains';
 
 let sdkInitTime;
 
@@ -72,7 +73,8 @@ export function setupLogger() {
     });
 
     waitForWindowReady().then(() => {
-        const loadTime = getResourceLoadTime(getSDKScript().src);
+        const sdkScript = getSDKScript();
+        const loadTime = getResourceLoadTime(sdkScript.src);
         let cache;
     
         if (loadTime === 0) {
@@ -82,10 +84,16 @@ export function setupLogger() {
         } else {
             cache = 'sdk_client_cache_unknown';
         }
-    
+
+        // Exclude apps that use the JS SDK and are hosted directly on www.paypal.com. Ex:
+        // https://www.paypal.com/buttons/smart
+        // https://www.paypal.com/us/gifts/
+        const isLoadedInFrame = isPayPalDomain() && window.xprops;
+
         logger
             .info(`setup_${ getEnv() }`)
             .info(`setup_${ getEnv() }_${ getVersion().replace(/\./g, '_') }`)
+            .info(`sdk_${ isLoadedInFrame ? 'paypal' : 'non_paypal' }_domain_script_uid_${ sdkScript.hasAttribute(ATTRIBUTES.UID) ? 'present' : 'missing' }`)
             .info(cache)
             .track({
                 [FPTI_KEY.TRANSITION]:    'process_js_sdk_init_client',

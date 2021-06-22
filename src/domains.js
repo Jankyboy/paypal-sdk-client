@@ -1,38 +1,23 @@
 /* @flow */
 
+import { ENV } from '@paypal/sdk-constants/src';
 import { getDomain, getActualDomain, isCurrentDomain } from 'cross-domain-utils/src';
 
-import { getProtocol, getHost, getStageHost, getAPIStageHost } from './globals';
+import { getProtocol, getStageHost, getPayPalDomain, getPayPalAPIDomain } from './global';
 import { URI } from './config';
 
-export function getPayPalDomain() : string {
-    return {
-        local:      `${ getProtocol() }://${ getHost() }`,
-        stage:      `${ getProtocol() }://${ getStageHost() }`,
-        sandbox:    `${ getProtocol() }://www.sandbox.paypal.com`,
-        production: `${ getProtocol() }://www.paypal.com`,
-        test:       `mock://www.paypal.com`
-    }[__ENV__];
-}
-
-export function getPayPalAPIDomain() : string {
-    return {
-        local:      `${ getProtocol() }://${ getAPIStageHost() }`,
-        stage:      `${ getProtocol() }://${ getAPIStageHost() }`,
-        sandbox:    `${ getProtocol() }://cors.api.sandbox.paypal.com`,
-        production: `${ getProtocol() }://cors.api.paypal.com`,
-        test:       `mock://api.paypal.com`
-    }[__ENV__];
-}
-
 export function getPayPalLoggerDomain() : string {
-    return {
-        local:      `${ getProtocol() }://${ getStageHost() }`,
-        stage:      getPayPalDomain(),
-        sandbox:    getPayPalDomain(),
-        production: getPayPalDomain(),
-        test:       getPayPalDomain()
-    }[__ENV__];
+    if (__ENV__ === ENV.LOCAL) {
+        const stageHost = getStageHost();
+
+        if (!stageHost) {
+            throw new Error(`No stage host found`);
+        }
+
+        return `${ getProtocol() }://${ stageHost }`;
+    }
+
+    return getPayPalDomain();
 }
 
 export function buildPayPalUrl(path : string = '') : string {
@@ -64,6 +49,9 @@ export function getOrderAPIUrl() : string {
 }
 
 export function getPayPalDomainRegex() : RegExp {
+    if (__ENV__ === ENV.LOCAL) {
+        return /.*loca.*/;
+    }
     // eslint-disable-next-line security/detect-unsafe-regex
     return /\.paypal\.com(:\d+)?$/;
 }

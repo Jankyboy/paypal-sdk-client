@@ -1,25 +1,12 @@
 /* @flow */
 
-import { getPayPalDomain, getPayPalAPIDomain, getPayPalLoggerDomain, buildPayPalUrl, buildPayPalAPIUrl, getPayPalLoggerUrl } from '../../src';
+import { getPayPalLoggerDomain, buildPayPalUrl, buildPayPalAPIUrl, getPayPalLoggerUrl } from '../../src';
+
+beforeEach(() => {
+    window.__ENV__ = 'test';
+});
 
 describe(`config cases`, () => {
-
-    it('should successfully get the paypal domain', () => {
-        const expectedPayPalDomain = 'mock://www.paypal.com';
-
-        if (getPayPalDomain() !== expectedPayPalDomain) {
-            throw new Error(`Expected paypal domain to be ${ expectedPayPalDomain }, got ${ getPayPalDomain() }`);
-        }
-    });
-
-    it('should successfully get the paypal api domain', () => {
-        const expectedPayPalAPIDomain = 'mock://api.paypal.com';
-
-        if (getPayPalAPIDomain() !== expectedPayPalAPIDomain) {
-            throw new Error(`Expected paypal api domain to be ${ expectedPayPalAPIDomain }, got ${ getPayPalAPIDomain() }`);
-        }
-    });
-
     it('should successfully get the paypal logger domain', () => {
         const expectedPayPalDomain = 'mock://www.paypal.com';
 
